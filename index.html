@@ -441,8 +441,8 @@
     <div class="card">
       <div class="toggle-row">
         <div>
-          <div style="font-weight:700; font-size:14px;">reminders while app is open</div>
-          <div class="hint" style="margin-top:2px;">asks your phone for permission the first time</div>
+          <div style="font-weight:700; font-size:14px;">reminders (even when closed)</div>
+          <div class="hint" style="margin-top:2px;">on iPhone: open this from the Home Screen icon first, then turn this on</div>
         </div>
         <button class="switch" id="notifToggle" onclick="toggleNotifs()"></button>
       </div>
@@ -498,6 +498,11 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+const VAPID_PUBLIC_KEY = "BHQwWrPa_siFkCieCApTgLworlhMoQXPESKxOEVOapQvnYKJA5O5lLzz84C68XznhmwGwn0jqRRFc5N5bTJOsRQ";
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
 
 /* ---------------- STORAGE ---------------- */
 const LOG_KEY = 'hydro_log_v1';
@@ -824,20 +829,42 @@ function renderNotifStatus() {
   else if (perm === 'denied') el.textContent = "notifications blocked — you can re-allow them in your phone's browser settings.";
   else el.textContent = "not asked yet";
 }
-function toggleNotifs() {
-  if (!settings.notifsEnabled) {
-    if ('Notification' in window) {
-      Notification.requestPermission().then(perm => {
-        updateSettingsRemote({ notifsEnabled: (perm === 'granted') });
-        renderSettings();
-      });
-    } else {
-      updateSettingsRemote({ notifsEnabled: false });
-      renderSettings();
-    }
-  } else {
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+  return outputArray;
+}
+
+async function toggleNotifs() {
+  if (settings.notifsEnabled) {
     updateSettingsRemote({ notifsEnabled: false });
     renderSettings();
+    return;
+  }
+  const el = document.getElementById('notifStatus');
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    if (el) el.textContent = "this browser doesn't support push notifications. On iPhone, make sure you opened this from the Home Screen icon, not a Safari tab.";
+    return;
+  }
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      if (el) el.textContent = 'notifications blocked — allow them in your phone settings to turn this on.';
+      return;
+    }
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    });
+    await db.ref('pushSubscription').set(sub.toJSON());
+    updateSettingsRemote({ notifsEnabled: true });
+    renderSettings();
+  } catch (e) {
+    if (el) el.textContent = 'could not turn on notifications: ' + (e && e.message ? e.message : 'unknown error');
   }
 }
 
