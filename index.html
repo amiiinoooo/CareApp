@@ -306,6 +306,48 @@
   .msg-item input { flex: 1; }
   .status-line { font-size: 12.5px; color: var(--ink-muted); margin-top: 6px; }
 
+  /* ---------- STREAK CALENDAR ---------- */
+  .cal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin: 8px 0 16px;
+  }
+  .cal-header .label { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600; }
+  .cal-header button {
+    background: none; border: none; font-size: 20px; color: var(--ink);
+    padding: 6px 12px; border-radius: 10px;
+  }
+  .cal-summary {
+    text-align: center; font-size: 13px; color: var(--ink-muted); margin-bottom: 16px;
+  }
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+  }
+  .cal-weekday {
+    font-size: 10px; font-weight: 700; color: var(--ink-muted);
+    text-align: center; padding-bottom: 4px;
+  }
+  .cal-cell {
+    aspect-ratio: 1;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+    background: var(--glass-track);
+    color: var(--ink-muted);
+    position: relative;
+    cursor: pointer;
+  }
+  .cal-cell.empty-slot { visibility: hidden; cursor: default; }
+  .cal-cell.has-data { color: var(--ink); }
+  .cal-cell.partial { background: var(--aqua-soft); }
+  .cal-cell.met { background: var(--aqua); color: #04241F; }
+  .cal-cell.is-today { box-shadow: 0 0 0 2px var(--coral) inset; }
+  .cal-dot {
+    position: absolute; bottom: 3px; width: 5px; height: 5px;
+    border-radius: 50%; background: var(--coral);
+  }
+
   /* ---------- NAV ---------- */
   nav.tabbar {
     position: fixed;
@@ -351,7 +393,7 @@
 <body>
 
 <header class="top">
-  <span class="greet display" style="font-size:17px; font-weight:600;">hey 💧</span>
+  <span class="greet display" style="font-size:17px; font-weight:600;">Love you 💧</span>
   <span class="date" id="todayLabel"></span>
 </header>
 
@@ -381,7 +423,7 @@
     </div>
 
     <div class="card" id="eatCard" style="display:none;">
-      <h3>did you eat today?</h3>
+      <h3>Did you eat today?</h3>
       <p class="sub">no judgment, just checking in</p>
       <div class="choice-row">
         <button class="btn small" onclick="logEaten('yes')">yeah ✓</button>
@@ -391,7 +433,7 @@
     </div>
 
     <div class="card">
-      <h3>how are you feeling</h3>
+      <h3>How are you feeling</h3>
       <div class="mood-row" id="moodRow">
         <button data-mood="🙂" onclick="logMood('🙂')">🙂</button>
         <button data-mood="😐" onclick="logMood('😐')">😐</button>
@@ -403,15 +445,26 @@
   <!-- LOG -->
   <section class="view" id="view-log">
     <div style="display:flex; justify-content:space-between; align-items:center; margin: 8px 0 16px;">
-      <h2 class="display" style="margin:0; font-size:22px;">your log</h2>
+      <h2 class="display" style="margin:0; font-size:22px;">Your log</h2>
       <button class="btn small" onclick="openBackfill()">+ add entry</button>
     </div>
     <div id="logList"></div>
   </section>
 
+  <!-- STREAK -->
+  <section class="view" id="view-streak">
+    <div class="cal-header">
+      <button onclick="shiftMonth(-1)">‹</button>
+      <span class="label" id="calLabel"></span>
+      <button onclick="shiftMonth(1)">›</button>
+    </div>
+    <div class="cal-summary" id="calStreakLine"></div>
+    <div class="cal-grid" id="calGrid"></div>
+  </section>
+
   <!-- SETTINGS -->
   <section class="view" id="view-settings">
-    <h2 class="display" style="margin: 8px 0 16px; font-size:22px;">settings</h2>
+    <h2 class="display" style="margin: 8px 0 16px; font-size:22px;">Settings</h2>
 
     <div class="card">
       <div class="field" style="margin-bottom:14px;">
@@ -450,7 +503,7 @@
     </div>
 
     <div class="card">
-      <h3 style="margin-bottom:10px;">your messages</h3>
+      <h3 style="margin-bottom:10px;">Your messages</h3>
       <p class="sub">shown on her home screen, one at a time</p>
       <div id="msgList"></div>
       <button class="btn small ghost full" onclick="addMessage()">+ add a message</button>
@@ -463,7 +516,7 @@
     </div>
 
     <div class="card">
-      <h3 style="font-size:14px;">sync status</h3>
+      <h3 style="font-size:14px;">Sync status</h3>
       <p class="status-line" id="persistStatus">connecting…</p>
     </div>
   </section>
@@ -476,6 +529,9 @@
   </button>
   <button data-view="log" onclick="switchView('log')">
     <span class="ic">📖</span> log
+  </button>
+  <button data-view="streak" onclick="switchView('streak')">
+    <span class="ic">🔥</span> streak
   </button>
   <button data-view="settings" onclick="switchView('settings')">
     <span class="ic">⚙️</span> settings
@@ -691,7 +747,7 @@ function logWater(amount, ts) {
 }
 function openCustomWater() {
   showModal(`
-    <h3>custom amount</h3>
+    <h3>Custom amount</h3>
     <div class="field">
       <label>how many glasses</label>
       <input type="number" id="customAmt" min="1" max="20" value="1">
@@ -710,9 +766,98 @@ function logEaten(value) {
   const today = todayStr();
   addEntryRemote({ ts: new Date().toISOString(), type: 'eaten', value });
   updateSettingsRemote({ lastEatPromptDate: today });
+  if (value !== 'yes') {
+    setTimeout(showEatFollowup, 250); // let the entry write land first
+  }
+}
+function showEatFollowup() {
+  showModal(`
+    <h3>Then please don't forget to</h3>
+    <p class="sub">eat something when you get a chance 🍽️</p>
+    <div class="choice-row">
+      <button class="btn primary small" onclick="scheduleEatReminder()">remind me in 1h</button>
+      <button class="btn small ghost" onclick="closeModal()">I'm okay</button>
+    </div>
+  `);
+}
+function scheduleEatReminder() {
+  const remindAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+  updateSettingsRemote({ eatReminderAt: remindAt, eatReminderPending: true });
+  closeModal();
 }
 function logMood(value) {
   addEntryRemote({ ts: new Date().toISOString(), type: 'mood', value });
+}
+
+/* ---------------- STREAK CALENDAR ---------------- */
+let calendarDate = new Date();
+calendarDate.setDate(1);
+
+function shiftMonth(delta) {
+  calendarDate.setMonth(calendarDate.getMonth() + delta);
+  renderStreakCalendar();
+}
+
+function renderStreakCalendar() {
+  const year = calendarDate.getFullYear();
+  const month = calendarDate.getMonth();
+  document.getElementById('calLabel').textContent = calendarDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+
+  const firstWeekday = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const today = todayStr();
+  const goal = settings.goal;
+
+  const weekdayLabels = ['S','M','T','W','T','F','S'];
+  let html = weekdayLabels.map(d => `<div class="cal-weekday">${d}</div>`).join('');
+
+  for (let i = 0; i < firstWeekday; i++) {
+    html += `<div class="cal-cell empty-slot"></div>`;
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const glasses = glassesForDay(dateStr);
+    let cls = 'cal-cell';
+    if (goal > 0 && glasses >= goal) cls += ' met has-data';
+    else if (glasses > 0) cls += ' partial has-data';
+    if (dateStr === today) cls += ' is-today';
+    const hasEaten = entriesForDay(dateStr).some(e => e.type === 'eaten');
+    html += `<div class="${cls}" onclick="openDayDetail('${dateStr}')">${d}${hasEaten ? '<span class="cal-dot"></span>' : ''}</div>`;
+  }
+
+  document.getElementById('calGrid').innerHTML = html;
+
+  const streak = computeStreak();
+  document.getElementById('calStreakLine').textContent = streak > 0
+    ? `🔥 ${streak} day${streak===1?'':'s'} in a row`
+    : `no active streak right now`;
+}
+
+function openDayDetail(dateStr) {
+  const items = entriesForDay(dateStr).sort((a,b) => a.ts.localeCompare(b.ts));
+  const glasses = glassesForDay(dateStr);
+  const rows = items.length ? items.map(e => {
+    let icon = '💧', txt = `${e.amount} glass${e.amount===1?'':'es'}`;
+    if (e.type === 'eaten') {
+      icon = e.value === 'yes' ? '🍽️' : e.value === 'later' ? '⏳' : '🚫';
+      txt = e.value === 'yes' ? 'ate today' : e.value === 'later' ? "hadn't eaten yet" : "hadn't eaten";
+    } else if (e.type === 'mood') {
+      icon = e.value; txt = 'mood check-in';
+    }
+    return `<div class="entry"><span class="icon">${icon}</span><span class="txt">${txt}</span><span class="time">${timeStr(e.ts)}</span></div>`;
+  }).join('') : `<div class="empty" style="padding:24px 10px;">nothing logged this day</div>`;
+
+  showModal(`
+    <h3>${niceDate(dateStr)}</h3>
+    <p class="sub">${glasses} glass${glasses===1?'':'es'} logged${goalMetLabel(dateStr)}</p>
+    ${rows}
+  `);
+}
+function goalMetLabel(dateStr) {
+  const glasses = glassesForDay(dateStr);
+  if (settings.goal > 0 && glasses >= settings.goal) return ' — goal hit 🎉';
+  return '';
 }
 
 /* ---------------- LOG VIEW ---------------- */
@@ -755,7 +900,7 @@ function deleteEntry(id) {
 function openBackfill() {
   const today = todayStr();
   showModal(`
-    <h3>add an earlier entry</h3>
+    <h3>Add an earlier entry</h3>
     <div class="field">
       <label>what</label>
       <select id="bfType" style="width:100%; padding:12px; border-radius:12px; border:1px solid var(--card-border); background:var(--bg); color:var(--ink);">
@@ -913,6 +1058,7 @@ function switchView(name) {
   document.getElementById('view-' + name).classList.add('active');
   document.querySelectorAll('nav.tabbar button').forEach(b => b.classList.toggle('active', b.dataset.view === name));
   if (name === 'log') renderLog();
+  if (name === 'streak') renderStreakCalendar();
   if (name === 'settings') renderSettings();
 }
 
