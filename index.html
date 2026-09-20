@@ -774,14 +774,25 @@ function showEatFollowup() {
   showModal(`
     <h3>Then please don't forget to</h3>
     <p class="sub">eat something when you get a chance 🍽️</p>
+    <div class="field">
+      <label>remind me in</label>
+      <select id="eatReminderChoice" style="width:100%; padding:12px; border-radius:12px; border:1px solid var(--card-border); background:var(--bg); color:var(--ink); font-family:inherit; font-size:15px;">
+        <option value="15">15 minutes</option>
+        <option value="30">30 minutes</option>
+        <option value="60" selected>1 hour</option>
+        <option value="120">2 hours</option>
+        <option value="180">3 hours</option>
+      </select>
+    </div>
     <div class="choice-row">
-      <button class="btn primary small" onclick="scheduleEatReminder()">remind me in 1h</button>
+      <button class="btn primary small" onclick="scheduleEatReminder()">set reminder</button>
       <button class="btn small ghost" onclick="closeModal()">I'm okay</button>
     </div>
   `);
 }
 function scheduleEatReminder() {
-  const remindAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+  const minutes = parseInt(document.getElementById('eatReminderChoice').value, 10) || 60;
+  const remindAt = new Date(Date.now() + minutes * 60 * 1000).toISOString();
   updateSettingsRemote({ eatReminderAt: remindAt, eatReminderPending: true });
   closeModal();
 }
