@@ -155,8 +155,14 @@
   .vessel .count .num { font-size: 40px; font-weight: 600; line-height: 1; }
   .vessel .count .goal { font-size: 12px; color: var(--ink-muted); font-weight: 600; }
 
+  .streak-badge {
+    margin-top: 14px;
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--ink);
+  }
   .streak {
-    margin-top: 12px;
+    margin-top: 4px;
     font-size: 13px;
     color: var(--ink-muted);
     display: flex;
@@ -477,10 +483,11 @@
           <div class="goal" id="goalLabel">of 8 glasses</div>
         </div>
       </div>
+      <div class="streak-badge display" id="streakBadge">🔥 0</div>
       <div class="streak" id="streakLine"></div>
     </div>
 
-    <p class="message display" id="rotatingMessage"></p>
+    <p class="message display" id="rotatingMessage">What progress did the boomer make? 👀</p>
 
     <div class="row-btns">
       <button class="btn" onclick="logWater(1)">+1 glass</button>
@@ -494,7 +501,6 @@
       <div class="choice-row">
         <button class="btn small" onclick="logEaten('yes')">yeah ✓</button>
         <button class="btn small" onclick="logEaten('later')">not yet</button>
-        <button class="btn small" onclick="logEaten('no')">no</button>
       </div>
     </div>
 
@@ -691,6 +697,7 @@ function attachFirebaseSync() {
       settings = Object.assign(loadSettings(), val);
       cacheSettingsLocally(settings);
       renderHome(); renderSettings();
+      syncDeviceTimezone();
     } else {
       // first run for this database — seed it with current (default) settings
       db.ref('settings').set(settings);
@@ -706,6 +713,14 @@ function attachFirebaseSync() {
 }
 function addEntryRemote(entry) {
   db.ref('entries').push(entry);
+}
+function syncDeviceTimezone() {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (tz && tz !== settings.timezone) {
+      updateSettingsRemote({ timezone: tz });
+    }
+  } catch (e) { /* Intl unavailable, skip */ }
 }
 function deleteEntryRemote(id) {
   db.ref('entries/' + id).remove();
@@ -731,8 +746,12 @@ function niceDate(str) {
 function timeStr(iso) {
   return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }
+function localDateStrOf(ts) {
+  const d = new Date(ts);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
 function entriesForDay(dayStr) {
-  return log.filter(e => e.ts.slice(0,10) === dayStr);
+  return log.filter(e => localDateStrOf(e.ts) === dayStr);
 }
 function glassesForDay(dayStr) {
   return entriesForDay(dayStr).filter(e => e.type === 'water').reduce((a,e)=>a+e.amount,0);
@@ -741,20 +760,19 @@ function uid() { return Date.now() + '_' + Math.random().toString(36).slice(2,8)
 
 /* ---------------- STREAK ---------------- */
 function computeStreak() {
-  let streak = 0;
+  const today = todayStr();
+  const todayMet = glassesForDay(today) >= settings.goal;
+  let streak = todayMet ? 1 : 0;
   let d = new Date();
-  // don't require today to be finished yet — only count today if it's already at goal
+  d.setDate(d.getDate() - 1); // start checking from yesterday backward
   for (let i = 0; i < 365; i++) {
     const ds = todayStr(d);
-    const total = glassesForDay(ds);
-    if (i === 0) {
-      if (total >= settings.goal) { streak++; }
-      else { break; }
+    if (glassesForDay(ds) >= settings.goal) {
+      streak++;
+      d.setDate(d.getDate() - 1);
     } else {
-      if (total >= settings.goal) { streak++; }
-      else break;
+      break;
     }
-    d.setDate(d.getDate() - 1);
   }
   return streak;
 }
@@ -771,17 +789,16 @@ function renderHome() {
   document.getElementById('fillBar').style.height = pct + '%';
 
   const streak = computeStreak();
+  const todayMet = total >= goal;
+  document.getElementById('streakBadge').textContent = `🔥 ${streak}`;
   const streakLine = document.getElementById('streakLine');
   if (streak > 0) {
-    streakLine.innerHTML = `🔥 <b>${streak} day${streak===1?'':'s'}</b> in a row`;
+    streakLine.innerHTML = todayMet
+      ? `day secured ✓`
+      : `keep it going today`;
   } else {
-    streakLine.innerHTML = `today's a fresh start`;
+    streakLine.innerHTML = `start your streak today`;
   }
-
-  // rotating message — deterministic-ish per hour so it doesn't flicker on every render
-  const msgs = settings.messages.length ? settings.messages : DEFAULT_MESSAGES;
-  const idx = Math.floor(Date.now() / (1000*60*30)) % msgs.length;
-  document.getElementById('rotatingMessage').textContent = msgs[idx];
 
   // eat card — once per day
   const eatCard = document.getElementById('eatCard');
@@ -834,7 +851,16 @@ function logEaten(value) {
   updateSettingsRemote({ lastEatPromptDate: today });
   if (value !== 'yes') {
     setTimeout(showEatFollowup, 250); // let the entry write land first
+  } else {
+    setTimeout(showEatCongrats, 250);
   }
+}
+function showEatCongrats() {
+  showModal(`
+    <h3>Yes! 🎉</h3>
+    <p class="sub">taking care of yourself — proud of you 🫶</p>
+    <button class="btn primary full" onclick="closeModal()">thank you</button>
+  `);
 }
 function showEatFollowup() {
   showModal(`
@@ -1139,38 +1165,6 @@ function switchView(name) {
   if (name === 'settings') renderSettings();
 }
 
-/* ---------------- REMINDER LOOP (foreground only) ---------------- */
-function isQuietNow() {
-  const now = new Date();
-  const [sh, sm] = settings.quietStart.split(':').map(Number);
-  const [eh, em] = settings.quietEnd.split(':').map(Number);
-  const start = sh*60+sm, end = eh*60+em, cur = now.getHours()*60+now.getMinutes();
-  if (start === end) return false;
-  if (start < end) return cur >= start && cur < end;
-  return cur >= start || cur < end; // wraps midnight
-}
-function maybeRemind() {
-  const today = todayStr();
-  if (settings.muteDate === today) return;
-  if (isQuietNow()) return;
-  const lastWater = [...log].filter(e => e.type === 'water').sort((a,b)=>a.ts.localeCompare(b.ts)).slice(-1)[0];
-  const hoursSince = lastWater ? (Date.now() - new Date(lastWater.ts).getTime()) / 3600000 : 99;
-  if (hoursSince < 1.5) return;
-  const lastReminder = settings.lastReminderAt ? new Date(settings.lastReminderAt).getTime() : 0;
-  if (Date.now() - lastReminder < 1.5 * 3600000) return;
-
-  updateSettingsRemote({ lastReminderAt: new Date().toISOString() });
-
-  const msgs = settings.messages.length ? settings.messages : DEFAULT_MESSAGES;
-  const text = msgs[Math.floor(Math.random()*msgs.length)];
-
-  if (settings.notifsEnabled && 'Notification' in window && Notification.permission === 'granted') {
-    try { new Notification('💧 ' + text); } catch(e) {}
-  }
-  if (navigator.vibrate) { try { navigator.vibrate(120); } catch(e) {} }
-}
-setInterval(maybeRemind, 5 * 60 * 1000);
-
 /* ---------------- STORAGE PERSISTENCE (best-effort local cache only) ---------------- */
 async function ensurePersistentStorage() {
   try {
@@ -1202,7 +1196,6 @@ initDownloads();
 ensurePersistentStorage();
 attachFirebaseSync();
 checkFirstVisit();
-setTimeout(maybeRemind, 3000);
 </script>
 </body>
 </html>
