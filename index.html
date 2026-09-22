@@ -590,6 +590,7 @@
     <div class="card">
       <h3 style="font-size:14px;">Sync status</h3>
       <p class="status-line" id="persistStatus">connecting…</p>
+      <p class="status-line" id="profileStatus"></p>
     </div>
   </section>
 
@@ -628,13 +629,22 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const VAPID_PUBLIC_KEY = "BHQwWrPa_siFkCieCApTgLworlhMoQXPESKxOEVOapQvnYKJA5O5lLzz84C68XznhmwGwn0jqRRFc5N5bTJOsRQ";
 
+/* ---------------- PROFILE (her = real/default, test = Amine's sandbox) ---------------- */
+const urlParams = new URLSearchParams(window.location.search);
+const PROFILE = (urlParams.get('profile') === 'test') ? 'test' : 'her';
+const PROFILE_PATH = 'profiles/' + PROFILE;
+(function() {
+  const el = document.getElementById('profileStatus');
+  if (el) el.textContent = (PROFILE === 'test') ? '🧪 test profile (sandbox — not her real data)' : 'profile: her';
+})();
+
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 
 /* ---------------- STORAGE ---------------- */
-const LOG_KEY = 'hydro_log_v1';
-const SETTINGS_KEY = 'hydro_settings_v1';
+const LOG_KEY = 'hydro_log_v1_' + PROFILE;
+const SETTINGS_KEY = 'hydro_settings_v1_' + PROFILE;
 
 const DEFAULT_MESSAGES = [
   "your body's basically a house plant. water it.",
@@ -682,7 +692,7 @@ let settings = loadSettings();
 
 /* ---------------- FIREBASE SYNC ---------------- */
 function attachFirebaseSync() {
-  db.ref('entries').on('value', (snap) => {
+  db.ref(PROFILE_PATH + '/entries').on('value', (snap) => {
     const val = snap.val() || {};
     log = Object.keys(val).map(id => Object.assign({ id }, val[id]));
     cacheLogLocally(log);
@@ -691,7 +701,7 @@ function attachFirebaseSync() {
     console.error('entries sync error', err);
   });
 
-  db.ref('settings').on('value', (snap) => {
+  db.ref(PROFILE_PATH + '/settings').on('value', (snap) => {
     const val = snap.val();
     if (val) {
       settings = Object.assign(loadSettings(), val);
@@ -699,8 +709,8 @@ function attachFirebaseSync() {
       renderHome(); renderSettings();
       syncDeviceTimezone();
     } else {
-      // first run for this database — seed it with current (default) settings
-      db.ref('settings').set(settings);
+      // first run for this profile — seed it with current (default) settings
+      db.ref(PROFILE_PATH + '/settings').set(settings);
     }
   }, (err) => {
     console.error('settings sync error', err);
@@ -712,7 +722,7 @@ function attachFirebaseSync() {
   });
 }
 function addEntryRemote(entry) {
-  db.ref('entries').push(entry);
+  db.ref(PROFILE_PATH + '/entries').push(entry);
 }
 function syncDeviceTimezone() {
   try {
@@ -723,12 +733,12 @@ function syncDeviceTimezone() {
   } catch (e) { /* Intl unavailable, skip */ }
 }
 function deleteEntryRemote(id) {
-  db.ref('entries/' + id).remove();
+  db.ref(PROFILE_PATH + '/entries/' + id).remove();
 }
 function updateSettingsRemote(partial) {
   settings = Object.assign(settings, partial);
   cacheSettingsLocally(settings);
-  db.ref('settings').update(partial);
+  db.ref(PROFILE_PATH + '/settings').update(partial);
 }
 
 /* ---------------- HELPERS ---------------- */
@@ -1108,7 +1118,7 @@ async function toggleNotifs() {
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
     });
-    await db.ref('pushSubscription').set(sub.toJSON());
+    await db.ref(PROFILE_PATH + '/pushSubscription').set(sub.toJSON());
     updateSettingsRemote({ notifsEnabled: true });
     renderSettings();
   } catch (e) {
