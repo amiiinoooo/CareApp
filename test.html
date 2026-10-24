@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CareApp">
+<title>CareApp (test build)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F6F3EC;
+    --card: #FFFFFF;
+    --card-border: rgba(14,42,40,0.10);
+    --ink: #12312E;
+    --ink-muted: #5E7A76;
+    --aqua: #1FA98F;
+    --aqua-soft: #CFEFE7;
+    --coral: #FF7A54;
+    --coral-ink: #7A2E1B;
+    --glass-track: #E4EFEC;
+    --shadow: 0 10px 30px rgba(18,49,46,0.08);
+    box-sizing: border-box;
+  }
+  :root:not([data-theme="light"]) {
+    @media (prefers-color-scheme: dark) {
+      --bg: #0E2A28;
+      --card: #123531;
+      --card-border: rgba(111,231,207,0.14);
+      --ink: #F4EDE3;
+      --ink-muted: #9FBFB8;
+      --aqua: #6FE7CF;
+      --aqua-soft: #16413B;
+      --coral: #FF9270;
+      --coral-ink: #2A140D;
+      --glass-track: #0B211F;
+      --shadow: 0 10px 30px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0E2A28;
+    --card: #123531;
+    --card-border: rgba(111,231,207,0.14);
+    --ink: #F4EDE3;
+    --ink-muted: #9FBFB8;
+    --aqua: #6FE7CF;
+    --aqua-soft: #16413B;
+    --coral: #FF9270;
+    --coral-ink: #2A140D;
+    --glass-track: #0B211F;
+    --shadow: 0 10px 30px rgba(0,0,0,0.35);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  .display { font-family: 'Fraunces', Georgia, serif; }
+
+  header.top {
+    padding: 18px 20px 8px;
+    padding-top: calc(18px + env(safe-area-inset-top, 0px));
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+  header.top .greet { font-size: 15px; color: var(--ink-muted); }
+  header.top .date { font-size: 13px; color: var(--ink-muted); }
+
+  main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 20px calc(100px + env(safe-area-inset-bottom, 0px));
+    max-width: 480px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .view { display: none; }
+  .view.active { display: block; animation: fadeIn .25s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px);} to { opacity:1; transform:none; } }
+  @media (prefers-reduced-motion: reduce) {
+    .view.active { animation: none; }
+  }
+
+  /* ---------- HOME ---------- */
+  .hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 18px 0 10px;
+  }
+  .vessel {
+    position: relative;
+    width: 150px;
+    height: 190px;
+    border-radius: 20px 20px 34px 34px / 20px 20px 46px 46px;
+    background: var(--glass-track);
+    border: 2px solid var(--card-border);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .vessel .fill {
+    position: absolute;
+    left: -10%;
+    width: 120%;
+    bottom: 0;
+    height: 0%;
+    background: linear-gradient(180deg, var(--aqua) 0%, color-mix(in srgb, var(--aqua) 70%, var(--card)) 100%);
+    transition: height 0.7s cubic-bezier(.22,1,.36,1);
+    border-radius: 45% 45% 0 0 / 18% 18% 0 0;
+  }
+  .vessel .fill::before {
+    content: "";
+    position: absolute;
+    top: -14px;
+    left: 0;
+    width: 200%;
+    height: 28px;
+    background: inherit;
+    border-radius: 45%;
+    animation: wave 4.5s linear infinite;
+  }
+  @keyframes wave {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .vessel .fill::before { animation: none; }
+  }
+  .vessel .count {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    mix-blend-mode: normal;
+  }
+  .vessel .count .num { font-size: 40px; font-weight: 600; line-height: 1; }
+  .vessel .count .goal { font-size: 12px; color: var(--ink-muted); font-weight: 600; }
+
+  .streak-badge {
+    margin-top: 14px;
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .streak {
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--ink-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .streak b { color: var(--ink); }
+
+  .message {
+    text-align: center;
+    font-family: 'Fraunces', serif;
+    font-size: 19px;
+    line-height: 1.35;
+    margin: 18px 6px 20px;
+    color: var(--ink);
+  }
+
+  .row-btns {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  button { font-family: inherit; cursor: pointer; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+  select { font-size: 16px; }
+  .btn {
+    border: none;
+    border-radius: 16px;
+    padding: 14px 8px;
+    font-weight: 700;
+    font-size: 14px;
+    background: var(--card);
+    color: var(--ink);
+    border: 1px solid var(--card-border);
+    box-shadow: var(--shadow);
+    transition: transform .12s ease;
+  }
+  .btn:active { transform: scale(0.96); }
+  .btn.primary {
+    background: var(--coral);
+    color: #FFFFFF;
+    border: none;
+  }
+  .btn.ghost {
+    background: transparent;
+    box-shadow: none;
+    color: var(--ink-muted);
+    border: 1px dashed var(--card-border);
+  }
+  .btn.full { width: 100%; }
+  .btn.small { padding: 10px 12px; font-size: 13px; border-radius: 12px; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 18px;
+    padding: 16px;
+    box-shadow: var(--shadow);
+    margin-bottom: 14px;
+  }
+  .card h3 {
+    margin: 0 0 4px;
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 17px;
+  }
+  .card p.sub { margin: 0 0 12px; font-size: 13px; color: var(--ink-muted); }
+  .choice-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .choice-row .btn { flex: 1; min-width: 80px; }
+
+  .mood-row { display: flex; justify-content: center; gap: 14px; margin-top: 4px; }
+  .mood-row button {
+    background: none; border: none; font-size: 28px; padding: 6px 10px;
+    border-radius: 12px; transition: background .15s ease, transform .12s ease;
+  }
+  .mood-row button.selected { background: var(--aqua-soft); transform: scale(1.08); }
+
+  .banner {
+    background: var(--aqua-soft);
+    color: var(--ink);
+    border-radius: 16px;
+    padding: 12px 14px;
+    font-size: 13.5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .banner .x { margin-left: auto; background: none; border: none; color: var(--ink-muted); font-size: 18px; padding: 2px 6px; }
+
+  /* ---------- LOG ---------- */
+  .day-group { margin-bottom: 20px; }
+  .day-group .day-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink-muted);
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .entry {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 4px;
+    border-bottom: 1px solid var(--card-border);
+    font-size: 14px;
+  }
+  .entry:last-child { border-bottom: none; }
+  .entry .icon { font-size: 18px; width: 24px; text-align: center; }
+  .entry .txt { flex: 1; }
+  .entry .time { font-size: 12px; color: var(--ink-muted); }
+  .entry .del { background: none; border: none; color: var(--ink-muted); font-size: 16px; padding: 4px 8px; }
+  .empty { text-align: center; color: var(--ink-muted); font-size: 14px; padding: 40px 20px; }
+
+  /* ---------- SETTINGS ---------- */
+  .field { margin-bottom: 18px; }
+  .field label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+  .field .hint { font-size: 12px; color: var(--ink-muted); margin-top: 6px; }
+  .field input[type="number"], .field input[type="time"], .field input[type="text"] {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--card-border);
+    background: var(--bg);
+    color: var(--ink);
+    font-size: 16px; /* 16px+ stops iOS zooming the page on focus */
+    font-family: inherit;
+  }
+  .time-row { display: flex; gap: 10px; align-items: center; }
+  .time-row span { color: var(--ink-muted); font-size: 13px; }
+  .toggle-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 4px 0;
+  }
+  .switch {
+    width: 46px; height: 27px; border-radius: 20px; background: var(--glass-track);
+    position: relative; border: none; padding: 0; cursor: pointer; flex-shrink: 0;
+  }
+  .switch::after {
+    content: ""; position: absolute; top: 3px; left: 3px; width: 21px; height: 21px;
+    border-radius: 50%; background: white; transition: transform .18s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+  .switch.on { background: var(--aqua); }
+  .switch.on::after { transform: translateX(19px); }
+  .msg-item { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .msg-item input { flex: 1; }
+  .status-line { font-size: 12.5px; color: var(--ink-muted); margin-top: 6px; }
+
+  /* ---------- STREAK CALENDAR ---------- */
+  .cal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin: 8px 0 16px;
+  }
+  .cal-header .label { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600; }
+  .cal-header button {
+    background: none; border: none; font-size: 20px; color: var(--ink);
+    padding: 6px 12px; border-radius: 10px;
+  }
+  .cal-summary {
+    text-align: center; font-size: 13px; color: var(--ink-muted); margin-bottom: 16px;
+  }
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+  }
+  .cal-weekday {
+    font-size: 10px; font-weight: 700; color: var(--ink-muted);
+    text-align: center; padding-bottom: 4px;
+  }
+  .cal-cell {
+    aspect-ratio: 1;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+    background: var(--glass-track);
+    color: var(--ink-muted);
+    position: relative;
+    cursor: pointer;
+  }
+  .cal-cell.empty-slot { visibility: hidden; cursor: default; }
+  .cal-cell.has-data { color: var(--ink); }
+  .cal-cell.partial { background: var(--aqua-soft); }
+  .cal-cell.met { background: var(--aqua); color: #04241F; }
+  .cal-cell.is-today { box-shadow: 0 0 0 2px var(--coral) inset; }
+  .cal-dot {
+    position: absolute; bottom: 3px; width: 5px; height: 5px;
+    border-radius: 50%; background: var(--coral);
+  }
+
+  /* ---------- INTRO OVERLAY (first visit only) ---------- */
+  .intro-overlay {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    z-index: 100;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    padding: 32px 26px;
+    padding-top: calc(32px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+    text-align: center;
+  }
+  .intro-overlay h2 {
+    font-family: 'Fraunces', serif;
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0 0 10px;
+    line-height: 1.3;
+  }
+  .intro-overlay .sub {
+    color: var(--ink-muted);
+    font-size: 14px;
+    margin: 0 0 32px;
+  }
+  .intro-step {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    text-align: left;
+  }
+  .intro-step .num {
+    width: 26px; height: 26px; flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--aqua-soft);
+    color: var(--ink);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 13px;
+  }
+  .intro-step .icon { font-size: 22px; flex-shrink: 0; }
+  .intro-step .txt { font-size: 14px; }
+  .intro-step .txt b { display: block; margin-bottom: 1px; }
+
+  /* ---------- INTRO OVERLAY (first visit only) end ---------- */
+  nav.tabbar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--card);
+    border-top: 1px solid var(--card-border);
+    display: flex;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    z-index: 10;
+  }
+  nav.tabbar button {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 12px 0 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    color: var(--ink-muted);
+    font-size: 11px;
+    font-weight: 700;
+  }
+  nav.tabbar button .ic { font-size: 20px; }
+  nav.tabbar button.active { color: var(--aqua); }
+
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+    display: flex; align-items: flex-end; justify-content: center;
+    z-index: 50;
+  }
+  .modal {
+    background: var(--card);
+    width: 100%; max-width: 480px;
+    border-radius: 22px 22px 0 0;
+    padding: 22px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.25);
+  }
+  .modal h3 { margin: 0 0 14px; font-family: 'Fraunces', serif; }
+  .modal .field input[type="date"], .modal .field input[type="time"] { width: 100%; }
+</style>
+</head>
+<body>
+
+<div class="intro-overlay" id="introOverlay">
+  <h2 class="display">Hey — I made this for you 🤭<br>hope you enjoy it</h2>
+  <p class="sub">But first, add it to your Home Screen so reminders actually work:</p>
+
+  <div class="intro-step">
+    <div class="num">1</div>
+    <div class="icon">⬆️</div>
+    <div class="txt"><b>Tap the Share button</b>the box with the arrow, at the bottom of Safari</div>
+  </div>
+  <div class="intro-step">
+    <div class="num">2</div>
+    <div class="icon">➕</div>
+    <div class="txt"><b>Tap "Add to Home Screen"</b>scroll down the share menu if you don't see it right away</div>
+  </div>
+
+  <button class="btn primary full" style="margin-top: 20px;" onclick="dismissIntro()">Got it, let's go</button>
+</div>
+
+<header class="top">
+  <span class="greet display" style="font-size:15px; font-weight:600;">Take care of yourself, gözlerim 🫶</span>
+  <span class="date" id="todayLabel"></span>
+</header>
+
+<main>
+
+  <!-- HOME -->
+  <section class="view active" id="view-home">
+    <div id="homeBanner"></div>
+
+    <div class="hero">
+      <div class="vessel">
+        <div class="fill" id="fillBar"></div>
+        <div class="count">
+          <div class="num display" id="todayCount">0</div>
+          <div class="goal" id="goalLabel">of 8 glasses</div>
+        </div>
+      </div>
+      <div class="streak-badge display" id="streakBadge">🔥 0</div>
+      <div class="streak" id="streakLine"></div>
+    </div>
+
+    <p class="message display" id="rotatingMessage">What progress did the boomer make? 👀</p>
+
+    <div class="row-btns">
+      <button class="btn" onclick="logWater(1)">+1 glass</button>
+      <button class="btn" onclick="logWater(2)">+2 glasses</button>
+      <button class="btn ghost" onclick="openCustomWater()">custom</button>
+    </div>
+
+    <div class="card" id="eatCard" style="display:none;">
+      <h3>Did you eat today?</h3>
+      <p class="sub">no judgment, just checking in</p>
+      <div class="choice-row">
+        <button class="btn small" onclick="logEaten('yes')">yeah ✓</button>
+        <button class="btn small" onclick="logEaten('later')">not yet</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>How are you feeling</h3>
+      <div class="mood-row" id="moodRow">
+        <button data-mood="🙂" onclick="logMood('🙂')">🙂</button>
+        <button data-mood="😐" onclick="logMood('😐')">😐</button>
+        <button data-mood="🙁" onclick="logMood('🙁')">🙁</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- LOG -->
+  <section class="view" id="view-log">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin: 8px 0 16px;">
+      <h2 class="display" style="margin:0; font-size:22px;">Your log</h2>
+      <button class="btn small" onclick="openBackfill()">+ add entry</button>
+    </div>
+    <div id="logList"></div>
+  </section>
+
+  <!-- STREAK -->
+  <section class="view" id="view-streak">
+    <div class="cal-header">
+      <button onclick="shiftMonth(-1)">‹</button>
+      <span class="label" id="calLabel"></span>
+      <button onclick="shiftMonth(1)">›</button>
+    </div>
+    <div class="cal-summary" id="calStreakLine"></div>
+    <div class="cal-grid" id="calGrid"></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="view" id="view-settings">
+    <h2 class="display" style="margin: 8px 0 16px; font-size:22px;">Settings</h2>
+
+    <div class="card">
+      <div class="field" style="margin-bottom:14px;">
+        <label>daily goal (glasses)</label>
+        <input type="number" id="goalInput" min="1" max="20">
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label>quiet hours (no reminders)</label>
+        <div class="time-row">
+          <input type="time" id="quietStart">
+          <span>to</span>
+          <input type="time" id="quietEnd">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="toggle-row">
+        <div>
+          <div style="font-weight:700; font-size:14px;">mute today</div>
+          <div class="hint" style="margin-top:2px;">no reminders until tomorrow</div>
+        </div>
+        <button class="switch" id="muteToggle" onclick="toggleMute()"></button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="toggle-row">
+        <div>
+          <div style="font-weight:700; font-size:14px;">reminders (even when closed)</div>
+          <div class="hint" style="margin-top:2px;">on iPhone: open this from the Home Screen icon first, then turn this on</div>
+        </div>
+        <button class="switch" id="notifToggle" onclick="toggleNotifs()"></button>
+      </div>
+      <div class="status-line" id="notifStatus"></div>
+    </div>
+
+    <div class="card" style="display:none;">
+      <h3 style="margin-bottom:10px;">Your messages</h3>
+      <p class="sub">shown on her home screen, one at a time</p>
+      <div id="msgList"></div>
+      <button class="btn small ghost full" onclick="addMessage()">+ add a message</button>
+    </div>
+
+    <div class="card" id="exportCard" style="display:none;">
+      <h3>export log</h3>
+      <p class="sub">save a backup of everything logged so far</p>
+      <button class="btn small full" onclick="exportLog()">download as file</button>
+    </div>
+
+    <div class="card">
+      <h3 style="font-size:14px;">Sync status</h3>
+      <p class="status-line" id="persistStatus">connecting…</p>
+      <p class="status-line" id="profileStatus"></p>
+    </div>
+  </section>
+
+</main>
+
+<nav class="tabbar">
+  <button class="active" data-view="home" onclick="switchView('home')">
+    <span class="ic">💧</span> home
+  </button>
+  <button data-view="log" onclick="switchView('log')">
+    <span class="ic">📖</span> log
+  </button>
+  <button data-view="streak" onclick="switchView('streak')">
+    <span class="ic">🔥</span> streak
+  </button>
+  <button data-view="settings" onclick="switchView('settings')">
+    <span class="ic">⚙️</span> settings
+  </button>
+</nav>
+
+<div id="modalRoot"></div>
+
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-database-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyB_xmmoI86RJFdcHtM4R-pM_kuu4XDN5i4",
+  authDomain: "careapp-2d887.firebaseapp.com",
+  databaseURL: "https://careapp-2d887-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "careapp-2d887",
+  storageBucket: "careapp-2d887.firebasestorage.app",
+  messagingSenderId: "789920862839",
+  appId: "1:789920862839:web:959cb50f8beee825ea2c72"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const VAPID_PUBLIC_KEY = "BHQwWrPa_siFkCieCApTgLworlhMoQXPESKxOEVOapQvnYKJA5O5lLzz84C68XznhmwGwn0jqRRFc5N5bTJOsRQ";
+
+/* ---------------- PROFILE (her = real/default, test = Amine's sandbox) ---------------- */
+const urlParams = new URLSearchParams(window.location.search);
+const PROFILE = 'test'; // test.html is hard-wired to the sandbox profile — it can never read or write "her"
+const PROFILE_PATH = 'profiles/' + PROFILE;
+(function() {
+  const el = document.getElementById('profileStatus');
+  if (el) el.textContent = (PROFILE === 'test') ? '🧪 test profile (sandbox — not her real data)' : 'profile: her';
+})();
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+/* ---------------- STORAGE ---------------- */
+const LOG_KEY = 'hydro_log_v1_' + PROFILE;
+const SETTINGS_KEY = 'hydro_settings_v1_' + PROFILE;
+
+const DEFAULT_MESSAGES = [
+  "your body's basically a house plant. water it.",
+  "drink something. i'll wait.",
+  "hydration check — this is your sign 💧",
+  "future you says thanks in advance",
+  "small sip, big difference"
+];
+
+function loadLog() {
+  try {
+    const raw = localStorage.getItem(LOG_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch(e) { return []; }
+}
+function cacheLogLocally(log) {
+  try { localStorage.setItem(LOG_KEY, JSON.stringify(log)); } catch(e) {}
+}
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    const s = raw ? JSON.parse(raw) : {};
+    return Object.assign({
+      goal: 8,
+      quietStart: "22:00",
+      quietEnd: "08:00",
+      muteDate: null,
+      notifsEnabled: false,
+      messages: DEFAULT_MESSAGES.slice(),
+      lastEatPromptDate: null,
+      lastReminderAt: null
+    }, s);
+  } catch(e) {
+    return { goal: 8, quietStart: "22:00", quietEnd: "08:00", muteDate: null, notifsEnabled: false, messages: DEFAULT_MESSAGES.slice(), lastEatPromptDate: null, lastReminderAt: null };
+  }
+}
+function cacheSettingsLocally(s) {
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch(e) {}
+}
+
+// log/settings start from the local cache so the UI paints instantly;
+// the Firebase listeners below then take over as the real source of truth.
+let log = loadLog();
+let settings = loadSettings();
+
+/* ---------------- FIREBASE SYNC ---------------- */
+function attachFirebaseSync() {
+  db.ref(PROFILE_PATH + '/entries').on('value', (snap) => {
+    const val = snap.val() || {};
+    log = Object.keys(val).map(id => Object.assign({ id }, val[id]));
+    cacheLogLocally(log);
+    renderHome(); renderLog();
+  }, (err) => {
+    console.error('entries sync error', err);
+  });
+
+  db.ref(PROFILE_PATH + '/settings').on('value', (snap) => {
+    const val = snap.val();
+    if (val) {
+      settings = Object.assign(loadSettings(), val);
+      cacheSettingsLocally(settings);
+      renderHome(); renderSettings();
+      syncDeviceTimezone();
+    } else {
+      // first run for this profile — seed it with current (default) settings
+      db.ref(PROFILE_PATH + '/settings').set(settings);
+    }
+  }, (err) => {
+    console.error('settings sync error', err);
+  });
+
+  db.ref('.info/connected').on('value', (snap) => {
+    const el = document.getElementById('persistStatus');
+    if (el) el.textContent = snap.val() ? 'synced ✓ — safe across devices and reinstalls' : 'offline — will sync once back online';
+  });
+}
+function addEntryRemote(entry) {
+  db.ref(PROFILE_PATH + '/entries').push(entry);
+}
+function syncDeviceTimezone() {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (tz && tz !== settings.timezone) {
+      updateSettingsRemote({ timezone: tz });
+    }
+  } catch (e) { /* Intl unavailable, skip */ }
+}
+function deleteEntryRemote(id) {
+  db.ref(PROFILE_PATH + '/entries/' + id).remove();
+}
+function updateSettingsRemote(partial) {
+  settings = Object.assign(settings, partial);
+  cacheSettingsLocally(settings);
+  db.ref(PROFILE_PATH + '/settings').update(partial);
+}
+
+/* ---------------- HELPERS ---------------- */
+function todayStr(d = new Date()) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function niceDate(str) {
+  const d = new Date(str + 'T00:00:00');
+  const today = todayStr();
+  const yest = todayStr(new Date(Date.now() - 86400000));
+  if (str === today) return 'today';
+  if (str === yest) return 'yesterday';
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+function timeStr(iso) {
+  return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+}
+function localDateStrOf(ts) {
+  const d = new Date(ts);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function entriesForDay(dayStr) {
+  return log.filter(e => localDateStrOf(e.ts) === dayStr);
+}
+function glassesForDay(dayStr) {
+  return entriesForDay(dayStr).filter(e => e.type === 'water').reduce((a,e)=>a+e.amount,0);
+}
+function uid() { return Date.now() + '_' + Math.random().toString(36).slice(2,8); }
+
+/* ---------------- STREAK ---------------- */
+function computeStreak() {
+  const today = todayStr();
+  const todayMet = glassesForDay(today) >= settings.goal;
+  let streak = todayMet ? 1 : 0;
+  let d = new Date();
+  d.setDate(d.getDate() - 1); // start checking from yesterday backward
+  for (let i = 0; i < 365; i++) {
+    const ds = todayStr(d);
+    if (glassesForDay(ds) >= settings.goal) {
+      streak++;
+      d.setDate(d.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
+/* ---------------- RENDER: HOME ---------------- */
+function renderHome() {
+  const today = todayStr();
+  const total = glassesForDay(today);
+  const goal = settings.goal;
+  const pct = Math.min(100, Math.round((total/goal)*100));
+
+  document.getElementById('todayCount').textContent = total;
+  document.getElementById('goalLabel').textContent = `of ${goal} glass${goal===1?'':'es'}`;
+  document.getElementById('fillBar').style.height = pct + '%';
+
+  const streak = computeStreak();
+  const todayMet = total >= goal;
+  document.getElementById('streakBadge').textContent = `🔥 ${streak}`;
+  const streakLine = document.getElementById('streakLine');
+  if (streak > 0) {
+    streakLine.innerHTML = todayMet
+      ? `day secured ✓`
+      : `keep it going today`;
+  } else {
+    streakLine.innerHTML = `start your streak today`;
+  }
+
+  // eat card — once per day
+  const eatCard = document.getElementById('eatCard');
+  const eatenToday = entriesForDay(today).some(e => e.type === 'eaten');
+  eatCard.style.display = eatenToday ? 'none' : 'block';
+
+  // mood selection state
+  const moodToday = entriesForDay(today).filter(e => e.type === 'mood').slice(-1)[0];
+  document.querySelectorAll('#moodRow button').forEach(b => {
+    b.classList.toggle('selected', moodToday && b.dataset.mood === moodToday.value);
+  });
+
+  renderBanner();
+}
+
+function renderBanner() {
+  const el = document.getElementById('homeBanner');
+  const today = todayStr();
+  if (settings.muteDate === today) {
+    el.innerHTML = `<div class="banner">🔕 reminders muted for today <button class="x" onclick="toggleMute()">un-mute</button></div>`;
+  } else {
+    el.innerHTML = '';
+  }
+}
+
+/* ---------------- ACTIONS: WATER ---------------- */
+function logWater(amount, ts) {
+  addEntryRemote({ ts: ts || new Date().toISOString(), type: 'water', amount });
+}
+function openCustomWater() {
+  showModal(`
+    <h3>Custom amount</h3>
+    <div class="field">
+      <label>how many glasses</label>
+      <input type="number" id="customAmt" min="1" max="20" value="1">
+    </div>
+    <button class="btn primary full" onclick="submitCustomWater()">log it</button>
+  `);
+}
+function submitCustomWater() {
+  const val = Math.min(20, parseInt(document.getElementById('customAmt').value, 10));
+  closeModal();
+  if (val > 0) logWater(val);
+}
+
+/* ---------------- ACTIONS: EAT / MOOD ---------------- */
+function logEaten(value) {
+  const today = todayStr();
+  addEntryRemote({ ts: new Date().toISOString(), type: 'eaten', value });
+  updateSettingsRemote({ lastEatPromptDate: today });
+  if (value !== 'yes') {
+    setTimeout(showEatFollowup, 250); // let the entry write land first
+  } else {
+    setTimeout(showEatCongrats, 250);
+  }
+}
+function showEatCongrats() {
+  showModal(`
+    <h3>Yes! 🎉</h3>
+    <p class="sub">taking care of yourself — proud of you 🫶</p>
+    <button class="btn primary full" onclick="closeModal()">thank you</button>
+  `);
+}
+function showEatFollowup() {
+  showModal(`
+    <h3>Then please don't forget to</h3>
+    <p class="sub">eat something when you get a chance 🍽️</p>
+    <div class="field">
+      <label>remind me in</label>
+      <select id="eatReminderChoice" style="width:100%; padding:12px; border-radius:12px; border:1px solid var(--card-border); background:var(--bg); color:var(--ink); font-family:inherit; font-size:16px;">
+        <option value="15">15 minutes</option>
+        <option value="30">30 minutes</option>
+        <option value="60" selected>1 hour</option>
+        <option value="120">2 hours</option>
+        <option value="180">3 hours</option>
+      </select>
+    </div>
+    <div class="choice-row">
+      <button class="btn primary small" onclick="scheduleEatReminder()">set reminder</button>
+      <button class="btn small ghost" onclick="closeModal()">I'm okay</button>
+    </div>
+  `);
+}
+function scheduleEatReminder() {
+  const minutes = parseInt(document.getElementById('eatReminderChoice').value, 10) || 60;
+  const remindAt = new Date(Date.now() + minutes * 60 * 1000).toISOString();
+  updateSettingsRemote({ eatReminderAt: remindAt, eatReminderPending: true });
+  closeModal();
+}
+function logMood(value) {
+  addEntryRemote({ ts: new Date().toISOString(), type: 'mood', value });
+}
+
+/* ---------------- STREAK CALENDAR ---------------- */
+let calendarDate = new Date();
+calendarDate.setDate(1);
+
+function shiftMonth(delta) {
+  calendarDate.setMonth(calendarDate.getMonth() + delta);
+  renderStreakCalendar();
+}
+
+function renderStreakCalendar() {
+  const year = calendarDate.getFullYear();
+  const month = calendarDate.getMonth();
+  document.getElementById('calLabel').textContent = calendarDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+
+  const firstWeekday = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const today = todayStr();
+  const goal = settings.goal;
+
+  const weekdayLabels = ['S','M','T','W','T','F','S'];
+  let html = weekdayLabels.map(d => `<div class="cal-weekday">${d}</div>`).join('');
+
+  for (let i = 0; i < firstWeekday; i++) {
+    html += `<div class="cal-cell empty-slot"></div>`;
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const glasses = glassesForDay(dateStr);
+    let cls = 'cal-cell';
+    if (goal > 0 && glasses >= goal) cls += ' met has-data';
+    else if (glasses > 0) cls += ' partial has-data';
+    if (dateStr === today) cls += ' is-today';
+    const hasEaten = entriesForDay(dateStr).some(e => e.type === 'eaten');
+    html += `<div class="${cls}" onclick="openDayDetail('${dateStr}')">${d}${hasEaten ? '<span class="cal-dot"></span>' : ''}</div>`;
+  }
+
+  document.getElementById('calGrid').innerHTML = html;
+
+  const streak = computeStreak();
+  document.getElementById('calStreakLine').textContent = streak > 0
+    ? `🔥 ${streak} day${streak===1?'':'s'} in a row`
+    : `no active streak right now`;
+}
+
+function openDayDetail(dateStr) {
+  const items = entriesForDay(dateStr).sort((a,b) => a.ts.localeCompare(b.ts));
+  const glasses = glassesForDay(dateStr);
+  const rows = items.length ? items.map(e => {
+    let icon = '💧', txt = `${e.amount} glass${e.amount===1?'':'es'}`;
+    if (e.type === 'eaten') {
+      icon = e.value === 'yes' ? '🍽️' : e.value === 'later' ? '⏳' : '🚫';
+      txt = e.value === 'yes' ? 'ate today' : e.value === 'later' ? "hadn't eaten yet" : "hadn't eaten";
+    } else if (e.type === 'mood') {
+      icon = e.value; txt = 'mood check-in';
+    }
+    return `<div class="entry"><span class="icon">${icon}</span><span class="txt">${txt}</span><span class="time">${timeStr(e.ts)}</span></div>`;
+  }).join('') : `<div class="empty" style="padding:24px 10px;">nothing logged this day</div>`;
+
+  showModal(`
+    <h3>${niceDate(dateStr)}</h3>
+    <p class="sub">${glasses} glass${glasses===1?'':'es'} logged${goalMetLabel(dateStr)}</p>
+    ${rows}
+  `);
+}
+function goalMetLabel(dateStr) {
+  const glasses = glassesForDay(dateStr);
+  if (settings.goal > 0 && glasses >= settings.goal) return ' — goal hit 🎉';
+  return '';
+}
+
+/* ---------------- LOG VIEW ---------------- */
+function renderLog() {
+  const el = document.getElementById('logList');
+  if (log.length === 0) {
+    el.innerHTML = `<div class="empty">nothing logged yet — hit a button on the home tab to start</div>`;
+    return;
+  }
+  // group by LOCAL date (same as entriesForDay), not the UTC date in the ISO string,
+  // otherwise entries logged shortly after local midnight silently disappear
+  const days = [...new Set(log.map(e => localDateStrOf(e.ts)))].sort().reverse();
+  el.innerHTML = days.map(day => {
+    const items = entriesForDay(day).sort((a,b)=> b.ts.localeCompare(a.ts));
+    const glasses = glassesForDay(day);
+    const rows = items.map(e => {
+      let icon = '💧', txt = `${e.amount} glass${e.amount===1?'':'es'}`;
+      if (e.type === 'eaten') {
+        icon = e.value === 'yes' ? '🍽️' : e.value === 'later' ? '⏳' : '🚫';
+        txt = e.value === 'yes' ? 'ate today' : e.value === 'later' ? "hadn't eaten yet" : "hadn't eaten";
+      } else if (e.type === 'mood') {
+        icon = e.value; txt = 'mood check-in';
+      }
+      return `<div class="entry">
+        <span class="icon">${icon}</span>
+        <span class="txt">${txt}</span>
+        <span class="time">${timeStr(e.ts)}</span>
+        <button class="del" onclick="deleteEntry('${e.id}')">✕</button>
+      </div>`;
+    }).join('');
+    return `<div class="day-group">
+      <div class="day-label"><span>${niceDate(day)}</span><span>${glasses} glass${glasses===1?'':'es'}</span></div>
+      <div class="card" style="padding: 4px 12px;">${rows}</div>
+    </div>`;
+  }).join('');
+}
+function deleteEntry(id) {
+  showModal(`
+    <h3>Delete this entry?</h3>
+    <p class="sub">this can change your streak</p>
+    <div class="choice-row">
+      <button class="btn primary small" onclick="confirmDeleteEntry('${id}')">delete</button>
+      <button class="btn small ghost" onclick="closeModal()">keep it</button>
+    </div>
+  `);
+}
+function confirmDeleteEntry(id) {
+  closeModal();
+  deleteEntryRemote(id);
+}
+
+/* ---------------- BACKFILL MODAL ---------------- */
+function openBackfill() {
+  const today = todayStr();
+  showModal(`
+    <h3>Add an earlier entry</h3>
+    <div class="field">
+      <label>what</label>
+      <select id="bfType" style="width:100%; padding:12px; border-radius:12px; border:1px solid var(--card-border); background:var(--bg); color:var(--ink);">
+        <option value="water">water</option>
+        <option value="eaten">ate / didn't eat</option>
+      </select>
+    </div>
+    <div class="field" id="bfAmountWrap">
+      <label>glasses</label>
+      <input type="number" id="bfAmount" min="1" max="20" value="1">
+    </div>
+    <div class="field">
+      <label>date</label>
+      <input type="date" id="bfDate" value="${today}" max="${today}">
+    </div>
+    <div class="field">
+      <label>time</label>
+      <input type="time" id="bfTime" value="${new Date().toTimeString().slice(0,5)}">
+    </div>
+    <button class="btn primary full" onclick="submitBackfill()">add to log</button>
+  `);
+  document.getElementById('bfType').addEventListener('change', (e) => {
+    document.getElementById('bfAmountWrap').style.display = e.target.value === 'water' ? 'block' : 'none';
+  });
+}
+function submitBackfill() {
+  const type = document.getElementById('bfType').value;
+  const date = document.getElementById('bfDate').value;
+  const time = document.getElementById('bfTime').value;
+  if (!date || !time) return; // incomplete: keep the modal open instead of crashing
+  const parsed = new Date(`${date}T${time}:00`);
+  if (isNaN(parsed.getTime())) return;
+  // never log into the future
+  const ts = new Date(Math.min(parsed.getTime(), Date.now())).toISOString();
+  closeModal();
+  if (type === 'water') {
+    const amt = parseInt(document.getElementById('bfAmount').value, 10) || 1;
+    logWater(amt, ts);
+  } else {
+    addEntryRemote({ ts, type: 'eaten', value: 'yes' });
+  }
+}
+
+/* ---------------- SETTINGS ---------------- */
+function renderSettings() {
+  document.getElementById('goalInput').value = settings.goal;
+  document.getElementById('quietStart').value = settings.quietStart;
+  document.getElementById('quietEnd').value = settings.quietEnd;
+  document.getElementById('muteToggle').classList.toggle('on', settings.muteDate === todayStr());
+  document.getElementById('notifToggle').classList.toggle('on', settings.notifsEnabled);
+  renderNotifStatus();
+  renderMessages();
+}
+document.getElementById('goalInput').addEventListener('change', e => {
+  updateSettingsRemote({ goal: Math.max(1, parseInt(e.target.value,10) || 8) });
+  renderHome();
+});
+document.getElementById('quietStart').addEventListener('change', e => { updateSettingsRemote({ quietStart: e.target.value }); });
+document.getElementById('quietEnd').addEventListener('change', e => { updateSettingsRemote({ quietEnd: e.target.value }); });
+
+function toggleMute() {
+  const today = todayStr();
+  updateSettingsRemote({ muteDate: (settings.muteDate === today) ? null : today });
+  renderSettings(); renderHome();
+}
+
+function renderNotifStatus() {
+  const el = document.getElementById('notifStatus');
+  if (!('Notification' in window)) {
+    el.textContent = "this browser doesn't support notifications — you'll still see nudges when you open the app.";
+    return;
+  }
+  const perm = Notification.permission;
+  if (perm === 'granted') el.textContent = "notifications allowed ✓";
+  else if (perm === 'denied') el.textContent = "notifications blocked — you can re-allow them in your phone's browser settings.";
+  else el.textContent = "not asked yet";
+}
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+  return outputArray;
+}
+
+async function toggleNotifs() {
+  if (settings.notifsEnabled) {
+    updateSettingsRemote({ notifsEnabled: false });
+    renderSettings();
+    return;
+  }
+  const el = document.getElementById('notifStatus');
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    if (el) el.textContent = "this browser doesn't support push notifications. On iPhone, make sure you opened this from the Home Screen icon, not a Safari tab.";
+    return;
+  }
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      if (el) el.textContent = 'notifications blocked — allow them in your phone settings to turn this on.';
+      return;
+    }
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    });
+    await db.ref(PROFILE_PATH + '/pushSubscription').set(sub.toJSON());
+    updateSettingsRemote({ notifsEnabled: true });
+    renderSettings();
+  } catch (e) {
+    if (el) el.textContent = 'could not turn on notifications: ' + (e && e.message ? e.message : 'unknown error');
+  }
+}
+
+function renderMessages() {
+  const el = document.getElementById('msgList');
+  el.innerHTML = settings.messages.map((m, i) => `
+    <div class="msg-item">
+      <input type="text" value="${m.replace(/"/g,'&quot;')}" onchange="editMessage(${i}, this.value)">
+      <button class="del" onclick="removeMessage(${i})">✕</button>
+    </div>
+  `).join('');
+}
+function editMessage(i, val) { const msgs = settings.messages.slice(); msgs[i] = val; updateSettingsRemote({ messages: msgs }); }
+function removeMessage(i) { const msgs = settings.messages.slice(); msgs.splice(i,1); updateSettingsRemote({ messages: msgs }); renderMessages(); renderHome(); }
+function addMessage() { const msgs = settings.messages.slice(); msgs.push('new message here'); updateSettingsRemote({ messages: msgs }); renderMessages(); }
+
+/* ---------------- EXPORT (downloads capability) ---------------- */
+let downloadsCap = null;
+async function initDownloads() {
+  try {
+    if (window.claude && window.claude.use) {
+      downloadsCap = await window.claude.use('downloads');
+      if (downloadsCap) document.getElementById('exportCard').style.display = 'block';
+    }
+  } catch(e) { /* not available */ }
+}
+async function exportLog() {
+  if (!downloadsCap) return;
+  try {
+    await downloadsCap.save({ filename: `hydration-log-${todayStr()}.json`, data: JSON.stringify(log, null, 2) });
+  } catch(e) { /* declined or failed, no-op */ }
+}
+
+/* ---------------- MODAL ---------------- */
+function showModal(innerHtml) {
+  const root = document.getElementById('modalRoot');
+  root.innerHTML = `<div class="modal-backdrop" onclick="if(event.target===this) closeModal()">
+    <div class="modal">${innerHtml}</div>
+  </div>`;
+}
+function closeModal() { document.getElementById('modalRoot').innerHTML = ''; }
+
+/* ---------------- NAV ---------------- */
+function switchView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  document.querySelectorAll('nav.tabbar button').forEach(b => b.classList.toggle('active', b.dataset.view === name));
+  if (name === 'log') renderLog();
+  if (name === 'streak') renderStreakCalendar();
+  if (name === 'settings') renderSettings();
+}
+
+/* ---------------- STORAGE PERSISTENCE (best-effort local cache only) ---------------- */
+async function ensurePersistentStorage() {
+  try {
+    if (navigator.storage && navigator.storage.persist) {
+      await navigator.storage.persist();
+    }
+  } catch (e) { /* API unavailable, no-op */ }
+}
+
+/* ---------------- INTRO OVERLAY (first visit only) ---------------- */
+function isInstalledApp() {
+  return window.navigator.standalone === true ||
+    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+}
+function checkFirstVisit() {
+  try {
+    // the "add to Home Screen" steps only make sense in a Safari tab, never inside the installed app
+    if (isInstalledApp()) return;
+    if (!localStorage.getItem('hydro_seen_intro')) {
+      document.getElementById('introOverlay').style.display = 'flex';
+    }
+  } catch (e) { /* if storage is unavailable, just skip showing it */ }
+}
+function dismissIntro() {
+  try { localStorage.setItem('hydro_seen_intro', '1'); } catch (e) {}
+  document.getElementById('introOverlay').style.display = 'none';
+}
+
+/* ---------------- INIT ---------------- */
+document.getElementById('todayLabel').textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+renderHome();
+renderLog();
+renderSettings();
+initDownloads();
+ensurePersistentStorage();
+attachFirebaseSync();
+checkFirstVisit();
+</script>
+</body>
+</html>
