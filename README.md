@@ -4,6 +4,10 @@ A lightweight, installable web app (PWA) that helps you drink enough water every
 
 Built with plain **HTML, CSS and JavaScript**: no framework, no build step.
 
+### 🔗 [Live demo](https://amiiinoooo.github.io/CareApp/test.html)
+
+The demo runs on a separate **test profile**, so feel free to log water, change settings and play around.
+
 ## Features
 
 - **One-tap logging**: +1 / +2 glasses or a custom amount, with progress toward a daily goal (default 8 glasses)
@@ -24,14 +28,34 @@ Built with plain **HTML, CSS and JavaScript**: no framework, no build step.
 | UI | HTML5, CSS3, vanilla JavaScript |
 | Data & sync | Firebase Realtime Database |
 | Notifications | Service Worker + Web Push (VAPID) |
+| Push server | Cloudflare Worker (cron every 15 min) + `web-push` |
 | Offline | Local storage cache |
 
 ## Project structure
 
 ```
-index.html   # the whole app: UI, styles and logic
-sw.js        # service worker: shows push notifications and handles clicks
-test.html    # sandbox build that reads/writes a separate test profile
+index.html          # the whole app: UI, styles and logic
+sw.js               # service worker: shows push notifications and handles clicks
+test.html           # demo build that reads/writes a separate test profile
+worker/             # push-notification server (Cloudflare Worker)
+  src/index.js      # every 15 min: checks progress & quiet hours, sends Web Push reminders
+  wrangler.toml     # worker config + cron trigger
+```
+
+## Push server
+
+Reminders are sent by a small **Cloudflare Worker** that runs on a cron schedule. Each run reads the user's settings and today's log from Firebase, respects quiet hours and "mute today", and sends a Web Push notification when it's time to drink.
+
+Secrets are never stored in the code; they're set as Worker secrets:
+
+```bash
+cd worker
+npm install
+npx wrangler secret put FIREBASE_DB_URL
+npx wrangler secret put VAPID_PUBLIC
+npx wrangler secret put VAPID_PRIVATE
+npx wrangler secret put VAPID_SUBJECT
+npx wrangler deploy
 ```
 
 ## Run locally
@@ -52,5 +76,6 @@ To use your own backend, replace the `firebaseConfig` object in `index.html` wit
 
 - Building a Progressive Web App without a framework
 - Service workers and the Web Push API
+- Serverless scheduled jobs with Cloudflare Workers
 - Real-time sync and offline-first caching with Firebase
 - Designing a small, mobile-first UI

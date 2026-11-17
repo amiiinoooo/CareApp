@@ -1,0 +1,12 @@
+{
+  "name": "hydro-push-worker",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/index.js",
+  "dependencies": {
+    "web-push": "^3.6.7"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
